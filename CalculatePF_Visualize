@@ -1,0 +1,106 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+import pandas_datareader
+import datetime
+from pandas_datareader import data as wb
+from statsmodels.tsa.seasonal import seasonal_decompose
+
+
+tickers = ['XEF.TO', 'VTINX','EEMV','ACWV', 'XIC.TO','VUSTX', 'ZFL.TO','FXC'] 
+pf = pd.DataFrame()
+for t in tickers:
+    pf[t] = wb.DataReader(t, data_source='yahoo', start = '2017-1-1')['Adj Close']
+
+
+
+log_ret = np.log(pf / pf.shift(1))
+
+# Set seed (optional)
+#np.random.seed(101)
+
+# My Portfolio Weights
+print('My Portfolio Weights')
+#holdings in thousands
+
+
+
+my_weights = np.array([22,22,17,11,11,5,7,2])
+print(my_weights)
+print('\n')
+ 
+
+
+# Rebalance Weights
+print('Rebalance to sum to 1.0')
+my_weights = my_weights / np.sum(my_weights)
+print(my_weights)
+print('\n')
+
+# Expected Return
+print('Expected Portfolio Return')
+my_exp_ret = np.sum(log_ret.mean() * my_weights) *250
+print(my_exp_ret)
+print('\n')
+
+
+# Expected Variance
+print('Expected Volatility')
+my_exp_vol = np.sqrt(np.dot(my_weights.T, np.dot(log_ret.cov() * 250, my_weights)))
+print(my_exp_vol)
+print('\n')
+
+# Sharpe Ratio  ASSUMES RF of 0 , subtract 2% if want to be more accurate
+my_SR = my_exp_ret/my_exp_vol
+print('Sharpe Ratio')
+print(my_SR)
+
+num_assets = len(tickers)
+
+rand_weights = np.random.random(num_assets)
+rand_weights /= np.sum(rand_weights)
+
+pfolio_returns = []
+pfolio_volatilities = []
+all_weights = np.zeros((10000,len(log_ret.columns)))
+
+
+for x in range (10000):
+    rand_weights = np.random.random(num_assets)
+    rand_weights /= np.sum(rand_weights)
+    all_weights[x,:] = rand_weights
+    pfolio_returns.append(np.sum(rand_weights * log_ret.mean()) * 250)
+    pfolio_volatilities.append(np.sqrt(np.dot(rand_weights.T,np.dot(log_ret.cov() * 250, rand_weights))))
+    
+    
+    
+pfolio_returns = np.array(pfolio_returns)
+pfolio_volatilities = np.array(pfolio_volatilities)   
+
+pfolio_returns, pfolio_volatilities
+
+
+portfolios = pd.DataFrame({'Return': pfolio_returns, 'Volatility': pfolio_volatilities})
+
+
+portfolios['Sharpe_Ratio']= portfolios['Return']/portfolios['Volatility']
+
+max_sr= portfolios['Sharpe_Ratio'].idxmax()
+
+max_sr_ret = portfolios['Return'][max_sr]
+max_sr_vol = portfolios['Volatility'][max_sr]
+
+
+portfolios.plot(x='Volatility', y='Return', kind='scatter', figsize=(10, 6));
+plt.xlabel('Expected Volatility')
+plt.ylabel('Expected Return')
+
+#Add my portfolio
+plt.scatter(my_exp_vol,my_exp_ret,label= 'my pf',c='black',s=100,edgecolors='black')
+
+# Add red dot for max SR
+plt.scatter(max_sr_vol,max_sr_ret,c='red',s=150,edgecolors='black')
+
+
