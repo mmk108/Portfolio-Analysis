@@ -92,6 +92,7 @@ max_sr= portfolios['Sharpe_Ratio'].idxmax()
 max_sr_ret = portfolios['Return'][max_sr]
 max_sr_vol = portfolios['Volatility'][max_sr]
 
+new_weights = all_weights[max_sr,:]
 
 portfolios.plot(x='Volatility', y='Return', kind='scatter', figsize=(10, 6));
 plt.xlabel('Expected Volatility')
